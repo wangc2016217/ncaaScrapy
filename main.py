@@ -13,10 +13,10 @@ import time
 import math
 import sqlite3
 import logging
+import os
 espnArray =  []
 collageArray = []
 spreadArray = []
-logging.basicConfig(filename='ncaa.log',filemode='w', level=logging.DEBUG)
 
 def get_espn():
     try:        
@@ -52,7 +52,7 @@ def get_espn():
                     })        
     except Exception as e:
         print(str(e))
-        logging.debug(str(e))
+        logging.info(str(e))
         traceback.print_exc()
 
 def get_colleage():
@@ -89,13 +89,13 @@ def get_colleage():
 
             except Exception as exx:
                 print(str(exx))
-                logging.debug(str(exx))
+                logging.info(str(exx))
                 pass
             pg = pg + 1
 
     except Exception as e:
         print(str(e))
-        logging.debug(str(e))
+        logging.info(str(e))
         traceback.print_exc()
 
 class get_spread(webauto_base):
@@ -393,7 +393,7 @@ class get_spread(webauto_base):
             self.quit_browser()
         except Exception as e:
             print(str(e))
-            logging.debug(str(e))
+            logging.info(str(e))
             traceback.print_exc()
 
 def findDay():
@@ -414,7 +414,7 @@ def get_conf(team_name):
 
         return tmp
     except:
-        logging.debug("Not found the get_conf of team_name")
+        logging.info("Not found the get_conf of team_name")
         return None
 
 def get_coll(team_name):
@@ -428,7 +428,7 @@ def get_coll(team_name):
 
         return tmp
     except:
-        logging.debug("Not found the coll of team_name")
+        logging.info("Not found the coll of team_name")
         return None
 
 def getCurrentDate():
@@ -558,7 +558,7 @@ def make_data():
         conn.commit()
         conn.close()   
     except Exception as e:
-        logging.debug(str(e))
+        logging.info(str(e))
         pass
 
 def make_spread():
@@ -796,22 +796,31 @@ def make_spread():
         conn.close()
         workbook.close()
     except Exception as e:
-        logging.debug(str(e))
+        logging.info(str(e))
         pass
 
 def main():
-    logging.debug("Start...")
-    logging.debug("Espn...")
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ncaa.log')
+    logging.basicConfig(filename=filename,level=logging.INFO,format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',)
+    logging.info("Start...")
+    logging.info("Espn...")
     get_espn()
-    logging.debug("colleage...")
+
+    logging.info("colleage...")
     get_colleage()
-    logging.debug("spread...")
-    spread = get_spread()
+
+    logging.info("spread...")
+    spread = get_spread()    
     spread.automate()
-    logging.debug("making...")
+
+    logging.info("making...")
     make_data()
-    logging.debug("creating...")
+
+    logging.info("creating...")
     make_spread()    
-    logging.debug("End...")
+    
+    logging.info("End...")
     
 main()
