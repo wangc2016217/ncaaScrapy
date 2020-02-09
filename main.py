@@ -11,9 +11,12 @@ from datetime import timedelta
 from webauto_base import webauto_base
 import time
 import math
+import sqlite3
+import logging
 espnArray =  []
 collageArray = []
 spreadArray = []
+logging.basicConfig(filename='ncaa.log',filemode='w', level=logging.DEBUG)
 
 def get_espn():
     try:        
@@ -49,6 +52,7 @@ def get_espn():
                     })        
     except Exception as e:
         print(str(e))
+        logging.debug(str(e))
         traceback.print_exc()
 
 def get_colleage():
@@ -83,13 +87,15 @@ def get_colleage():
                     except:
                         pass                   
 
-            except Exception as e:
-                print(str(e))
+            except Exception as exx:
+                print(str(exx))
+                logging.debug(str(exx))
                 pass
             pg = pg + 1
 
     except Exception as e:
         print(str(e))
+        logging.debug(str(e))
         traceback.print_exc()
 
 class get_spread(webauto_base):
@@ -189,7 +195,6 @@ class get_spread(webauto_base):
                     bettingDate = divs.find_element_by_xpath("./div/div/span")
                     if bettingDate.text != "Box Scores":
                         bettingDate = bettingDate.text
-                        #print(i)
                         continue
 
                     if bettingDate.text == "Box Scores":
@@ -199,8 +204,7 @@ class get_spread(webauto_base):
                     pass
                 try:
                     length = len(divs.find_elements_by_xpath("./div"))
-                    if length >= 2 and bettingDate is not None:
-                        
+                    if length >= 2 and bettingDate is not None:                        
                         
                         point_A_T = ""
                         point_B_T = ""                        
@@ -255,14 +259,14 @@ class get_spread(webauto_base):
 
                         spreadArray.append({
                             'team' : teams[i].text,
-                            'opener' : opener_f.replace('PK','0').replace('½','.5'),
-                            'opener_odds': opener_s.replace('PK','0').replace('½','.5'),
-                            'bookmarker' : bookmarker_f.replace('PK','0').replace('½','.5'),
-                            'bookmarker_odds' : bookmarker_s.replace('PK','0').replace('½','.5'),
-                            'five_times' : five_times_f.replace('PK','0').replace('½','.5'),
-                            'five_times_odds' : five_times_s.replace('PK','0').replace('½','.5'),
-                            'bovada' : bovada_f.replace('PK','0').replace('½','.5'),
-                            'bovada_odds' : bovada_s.replace('PK','0').replace('½','.5'),
+                            'opener' : getOdds(opener_f),
+                            'opener_odds': getOdds(opener_s),
+                            'bookmarker' : getOdds(bookmarker_f),
+                            'bookmarker_odds' : getOdds(bookmarker_s),
+                            'five_times' : getOdds(five_times_f),
+                            'five_times_odds' : getOdds(five_times_s),
+                            'bovada' : getOdds(bovada_f),
+                            'bovada_odds' : getOdds(bovada_s),                            
                             'date': bettingDate,
                             'point': point_A_T,
                             'diff': diff_A
@@ -286,7 +290,6 @@ class get_spread(webauto_base):
                         except:
                             pass
                         
-
                         five_times_f = "-"
                         five_times_s = "-"
                         try:
@@ -307,14 +310,14 @@ class get_spread(webauto_base):
 
                         spreadArray.append({
                             'team' : teams[i+1].text,
-                            'opener' : opener_f.replace('PK','0').replace('½','.5'),
-                            'opener_odds': opener_s.replace('PK','0').replace('½','.5'),
-                            'bookmarker' : bookmarker_f.replace('PK','0').replace('½','.5'),
-                            'bookmarker_odds' : bookmarker_s.replace('PK','0').replace('½','.5'),
-                            'five_times' : five_times_f.replace('PK','0').replace('½','.5'),
-                            'five_times_odds' : five_times_s.replace('PK','0').replace('½','.5'),
-                            'bovada' : bovada_f.replace('PK','0').replace('½','.5'),
-                            'bovada_odds' : bovada_s.replace('PK','0').replace('½','.5'),
+                            'opener' : getOdds(opener_f),
+                            'opener_odds': getOdds(opener_s),
+                            'bookmarker' : getOdds(bookmarker_f),
+                            'bookmarker_odds' : getOdds(bookmarker_s),
+                            'five_times' : getOdds(five_times_f),
+                            'five_times_odds' : getOdds(five_times_s),
+                            'bovada' : getOdds(bovada_f),
+                            'bovada_odds' : getOdds(bovada_s),
                             'date': bettingDate,
                             'point': point_B_T,
                             'diff': diff_B
@@ -330,7 +333,7 @@ class get_spread(webauto_base):
             xpath = "/html/body/div[1]/div/div/div/section/div/div[2]/div[1]/span[2]"
             self.click_element(xpath, 3, 0)
 
-            self.delay_me(3)            
+            self.delay_me(3)
             
             xpath = "//div[@id='bettingOddsGridContainer']/div[3]/*"
             self.wait_present(xpath, 30)
@@ -390,10 +393,14 @@ class get_spread(webauto_base):
             self.quit_browser()
         except Exception as e:
             print(str(e))
+            logging.debug(str(e))
             traceback.print_exc()
 
 def findDay():
-    return date.today().weekday()        
+    return date.today().weekday()
+
+def getToday():
+    return datetime.today().strftime("%Y-%m-%d")
 
 def get_conf(team_name):
 
@@ -407,6 +414,7 @@ def get_conf(team_name):
 
         return tmp
     except:
+        logging.debug("Not found the get_conf of team_name")
         return None
 
 def get_coll(team_name):
@@ -420,6 +428,7 @@ def get_coll(team_name):
 
         return tmp
     except:
+        logging.debug("Not found the coll of team_name")
         return None
 
 def getCurrentDate():
@@ -428,143 +437,65 @@ def getCurrentDate():
 def getCurrentMonth():
     return datetime.today().strftime("%b")
 
-def make_excel():
+def getOdds(odds):
+    try:
+        odds = odds.replace('½','.5')
+        if odds == 'PK':
+            odds = '0'
+        elif odds == '-':
+            odds = '0'
+
+        return odds
+
+    except:
+        return '0' 
+
+def make_data():
     print("Creating...")
-    today = datetime.now()
+    try:
+        # insert the information into database
 
-    dayNumber = findDay()
-    filename = "result_" + today.strftime("%Y%m%d%H%M%S") + ".xlsx"
-    #filename = "result.xlsx"
-    
-    workbook = xlsxwriter.Workbook(filename)
-    worksheet = workbook._get_sheet_index('NCAA Teams')    
-    #worksheet = workbook.get_worksheet_by_name('NCAA Teams')
-    
+        today = getToday()
 
-    #worksheet = workbook.add_worksheet('NCAA Teams')
-    
-    bold = workbook.add_format({'bold': True})
-    worksheet.write(0, 0, "Team", bold)
-    worksheet.write(0, 1, "Conference", bold)
-    worksheet.write(0, 2, "W-L (Conference)", bold)
-    worksheet.write(0, 3, "GB", bold)
-    worksheet.write(0, 4, "PCT", bold)
-    worksheet.write(0, 5, "W-L (Overall)", bold)
-    worksheet.write(0, 6, "PCT", bold)
-    worksheet.write(0, 7, "Home", bold)
-    worksheet.write(0, 8, "PCT", bold)
-    worksheet.write(0, 9, "Away", bold)
-    worksheet.write(0, 10, "PCT", bold)
-    worksheet.write(0, 11, "STRK", bold)
-                        
-    index = 1
-    for espn in espnArray:
-        worksheet.write(index, 0, espn['team_name'])
-        worksheet.write(index, 1, espn['conference_name'])
-        worksheet.write(index, 2, espn['c_w_l'])
-        worksheet.write(index, 3, espn['c_gb'])
-        worksheet.write(index, 4, espn['c_pct'])
-        worksheet.write(index, 5, espn['o_w_l'])
-        worksheet.write(index, 6, espn['o_pct'])
-        worksheet.write(index, 7, espn['o_home'])
-        worksheet.write(index, 9, espn['o_away'])
-        worksheet.write(index, 11, espn['o_strk'])
+        conn = sqlite3.connect('my.db')
+        c = conn.cursor()
+        c.execute("delete from spread where update_time='{}'".format(today))
+        conn.commit()
+        
+        index = 1
+        flag = False
 
-        result = 0
-        try:
-            array = espn["o_home"].split('-')                   
-            result = round(int(array[0])/(int(array[0])+int(array[1])) * 100)
-        except:
-            result = 0
-            pass
-        worksheet.write(index, 8, str(result) + "%")
+        todayData = []
+        for spread in spreadArray: 
+            first_A = get_conf(spread['team'])
+            first_B = get_coll(spread['team'])
 
-        result = 0
-        try:
-            array = espn["o_away"].split('-')                   
-            result = round(int(array[0])/(int(array[0])+int(array[1])) * 100)
-        except:
-            result = 0
-            pass
-        worksheet.write(index, 10, str(result) + "%")
+            away_home = ""
+            result = 0        
+            away_30 = ""
+            home_70 = ""
+            sharp = ""
+            wager = ""
+            p_d = ""
+            if spread['diff'] > 0:
+                p_d = spread['diff']
 
-        index = index + 1
-
-    worksheet = workbook.add_worksheet('Spread')
-    
-    bold = workbook.add_format({'bold': True})
-    worksheet.write(0, 0, "Date", bold)
-    worksheet.write(0, 1, "Team", bold)
-    worksheet.write(0, 2, "Conf", bold)
-    worksheet.write(0, 3, "Spread (Opener)", bold)
-    worksheet.write(0, 4, "Odds", bold)
-    worksheet.write(0, 5, "Spread (BookMaker)", bold)
-    worksheet.write(0, 6, "Odds", bold)
-    worksheet.write(0, 7, "Spread (5 Dimes)", bold)
-    worksheet.write(0, 8, "Odds", bold)
-    worksheet.write(0, 9, "Spread (Bovada)", bold)
-    worksheet.write(0, 10, "Odds", bold)
-    worksheet.write(0, 11, "Away/Home Overall Record", bold)
-    worksheet.write(0, 12, "Percentage", bold)
-    worksheet.write(0, 13, "W-L (Overall) PCT", bold)
-    worksheet.write(0, 14, "STRK", bold)
-    worksheet.write(0, 15, "BPI Rank", bold)
-    worksheet.write(0, 16, "SOS Rank", bold)
-    worksheet.write(0, 17, "SOR Rank", bold)
-    worksheet.write(0, 18, "Score", bold)
-    worksheet.write(0, 19, "P.D", bold)
-    worksheet.write(0, 20, "Away 30% below", bold)
-    worksheet.write(0, 21, "Home 70% above", bold)
-    worksheet.write(0, 22, "Sharp-Square", bold)
-    worksheet.write(0, 23, "Wager", bold)
-
-    espn['o_strk']
-    
-    green_format1 = workbook.add_format()
-    green_format1.set_pattern(1)  # This is optional when using a solid fill.
-    green_format1.set_bg_color('green')
-
-    tomato_format2 = workbook.add_format()
-    tomato_format2.set_pattern(1)  # This is optional when using a solid fill.
-    tomato_format2.set_bg_color('#ff6347')
-
-    magenta_format = workbook.add_format()
-    magenta_format.set_pattern(1)  # This is optional when using a solid fill.
-    magenta_format.set_bg_color('magenta')   
-    index = 1
-    flag = False
-    for spread in spreadArray: 
-               
-        worksheet.write(index, 0, spread['date'])
-        worksheet.write(index, 1, spread['team'])
-        first_A = get_conf(spread['team'])
-        first_B = get_coll(spread['team'])
-
-        if first_A is not None:
-            worksheet.write(index, 2, first_A["conference_name"])
-            worksheet.write(index, 13, first_A["o_pct"])
-            worksheet.write(index, 14, first_A["o_strk"])
-
-            if index % 3 == 1:
-                worksheet.write(index, 11, first_A["o_away"])
-                result = 0                
+            if index % 2 == 1:            
+                away_home = first_A["o_away"]
+                                
                 try:
                     array = first_A["o_away"].split('-')                   
                     result = round(int(array[0])/(int(array[0])+int(array[1])) * 100)
                 except:
                     result = 0
                     pass
-
-                # if result >= 70:
-                #     worksheet.write(index, 12, str(result) + "%",green_format1)
+                
                 if result <= 30:
-                    worksheet.write(index, 12, str(result) + "%",tomato_format2)
                     flag = True
-                else:
-                    worksheet.write(index, 12, str(result) + "%")
+                else:                
                     flag = False
             else:
-                worksheet.write(index, 11, first_A['o_home'])
+                away_home = first_A["o_home"]            
 
                 result = 0
                 try:
@@ -573,70 +504,314 @@ def make_excel():
                 except:
                     result = 0
                     pass
+                
                 if result >= 70:
-                    worksheet.write(index, 12, str(result) + "%",green_format1)
-                    worksheet.write(index, 21, 1)
-                # elif result <= 30:
-                #     worksheet.write(index, 12, str(result) + "%",tomato_format2)
-                else:
-                    worksheet.write(index, 12, str(result) + "%")
-                    worksheet.write(index, 21, 0)
+                    home_70 = 1                
+                else:                
+                    home_70 = 0
+
                 try:
-                    worksheet.write(index, 22, float(spread['bovada']) - float(spread['bookmarker']))
+                    sharp = float(spread['bovada']) - float(spread['bookmarker'])                
                 except:
-                    worksheet.write(index, 22, 0)
+                    sharp = 0
 
-                worksheet.write(index, 23, "no")
-
+                wager = "no"
                 if flag == True:
-                    worksheet.write(index, 20, 1)
-                    try:
-                        if result >= 70 and float(spread['bovada']) - float(spread['bookmarker']) > 0:
-                            worksheet.write(index, 23, "yes")
-                    except:
-                        pass
+                    away_30 = 1
+
+                    if result >= 70 and sharp > 0:
+                        wager = "yes"            
                 else:
-                    worksheet.write(index, 20, 0)
-
-        if first_B is not None:
-            worksheet.write(index, 15, first_B['bpi_rk'])
-            worksheet.write(index, 16, first_B['sos_rk'])
-            worksheet.write(index, 17, first_B['sor_rk'])
-        worksheet.write(index, 18, spread['point'])
-
-        if spread['diff'] > 0:
-            worksheet.write(index, 19, spread['diff'])
-        
+                    away_30 = 0                
+                    
+            todayData.append(list({
+                'date': spread['date'],
+                'team': spread['team'],
+                'conf': first_A["conference_name"],
+                'spread': spread['opener'],
+                'spread_odd': spread['opener_odds'],
+                'bookmaker': spread['bookmarker'],
+                'bootmaker_odd': spread['bookmarker_odds'],
+                'fivetime': spread['five_times'],
+                'fivetime_odd': spread['five_times_odds'],
+                'bovada': spread['bovada'],
+                'bovada_odd': spread['bovada_odds'],
+                'away_home': away_home,
+                'percentage': str(result) + "%",
+                'w_l': first_A["o_pct"],
+                'strk': first_A["o_strk"],
+                'bpi_rank': first_B['bpi_rk'],
+                'sos_rank': first_B['sos_rk'],
+                'sor_rank': first_B['sor_rk'],
+                'score': spread['point'],
+                'p_d': p_d,
+                'away_30': str(away_30),
+                'home_70': str(home_70),
+                'sharp': str(sharp),
+                'wager': wager,
+                'update_time': today
+            }.values()))
             
-        worksheet.write(index, 3, spread['opener'])
-        worksheet.write(index, 4, spread['opener_odds'])
+            index = index + 1
 
-        if spread['bookmarker'] == spread['bovada']:
-            worksheet.write(index, 5, spread['bookmarker'])
-        else:
-            worksheet.write(index, 5, spread['bookmarker'],magenta_format)
+        c.executemany("insert into spread('date','team','conf','spread','spread_odd','bookmaker','bootmaker_odd','fivetime','fivetime_odd','bovada','bovada_odd','away_home','percentage','w_l','strk','bpi_rank','sos_rank','sor_rank','score','p_d','away_30','home_70','sharp','wager','update_time') values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", todayData)
+        conn.commit()
+        conn.close()   
+    except Exception as e:
+        logging.debug(str(e))
+        pass
+
+def make_spread():
+    print("Making...")
+    try:
+        today = datetime.now()
+
+        dayNumber = findDay()
+        filename = "result_" + today.strftime("%Y%m%d%H%M%S") + ".xlsx"
             
-        worksheet.write(index, 6, spread['bookmarker_odds'])
-        worksheet.write(index, 7, spread['five_times'])
-        worksheet.write(index, 8, spread['five_times_odds'])
-
-        if spread['bookmarker'] == spread['bovada']:
-            worksheet.write(index, 9, spread['bovada'])
-        else:
-            worksheet.write(index, 9, spread['bovada'],magenta_format)
-        worksheet.write(index, 10, spread['bovada_odds'])
+        workbook = xlsxwriter.Workbook(filename)
+        worksheet = workbook.add_worksheet('NCAA Teams')
         
-        index = index + 1
-        if index % 3 == 0:
-            index = index + 1      
-    workbook.close()
-    pass
+        bold = workbook.add_format({'bold': True})
+        worksheet.write(0, 0, "Team", bold)
+        worksheet.write(0, 1, "Conference", bold)
+        worksheet.write(0, 2, "W-L (Conference)", bold)
+        worksheet.write(0, 3, "GB", bold)
+        worksheet.write(0, 4, "PCT", bold)
+        worksheet.write(0, 5, "W-L (Overall)", bold)
+        worksheet.write(0, 6, "PCT", bold)
+        worksheet.write(0, 7, "Home", bold)
+        worksheet.write(0, 8, "PCT", bold)
+        worksheet.write(0, 9, "Away", bold)
+        worksheet.write(0, 10, "PCT", bold)
+        worksheet.write(0, 11, "STRK", bold)
+                            
+        index = 1
+        for espn in espnArray:
+            worksheet.write(index, 0, espn['team_name'])
+            worksheet.write(index, 1, espn['conference_name'])
+            worksheet.write(index, 2, espn['c_w_l'])
+            worksheet.write(index, 3, espn['c_gb'])
+            worksheet.write(index, 4, espn['c_pct'])
+            worksheet.write(index, 5, espn['o_w_l'])
+            worksheet.write(index, 6, espn['o_pct'])
+            worksheet.write(index, 7, espn['o_home'])
+            worksheet.write(index, 9, espn['o_away'])
+            worksheet.write(index, 11, espn['o_strk'])
+
+            result = 0
+            try:
+                array = espn["o_home"].split('-')                   
+                result = round(int(array[0])/(int(array[0])+int(array[1])) * 100)
+            except:
+                result = 0
+                pass
+            worksheet.write(index, 8, str(result) + "%")
+
+            result = 0
+            try:
+                array = espn["o_away"].split('-')                   
+                result = round(int(array[0])/(int(array[0])+int(array[1])) * 100)
+            except:
+                result = 0
+                pass
+            worksheet.write(index, 10, str(result) + "%")
+
+            index = index + 1
+        
+        conn = sqlite3.connect('my.db')
+        c = conn.cursor()
+        
+        weekday = findDay()    
+        
+        bold = workbook.add_format({'bold': True})
+        green_format1 = workbook.add_format()
+        green_format1.set_pattern(1)  # This is optional when using a solid fill.
+        green_format1.set_bg_color('green')
+
+        tomato_format2 = workbook.add_format()
+        tomato_format2.set_pattern(1)  # This is optional when using a solid fill.
+        tomato_format2.set_bg_color('#ff6347')
+
+        magenta_format = workbook.add_format()
+        magenta_format.set_pattern(1)  # This is optional when using a solid fill.
+        magenta_format.set_bg_color('magenta')
+
+        for i in range(weekday+1):    
+            
+            findex = weekday -i        
+            day = datetime.strftime(datetime.now() - timedelta(findex), '%Y-%m-%d')
+            date = datetime.strftime(datetime.now() - timedelta(findex), '%d')
+            month = datetime.strftime(datetime.now() - timedelta(findex), '%b')
+            worksheet = workbook.add_worksheet(month + '.' + date)
+            
+            c.execute("select * from spread where update_time='" + day + "'")
+            data = c.fetchall()
+            if data is not None:
+
+                worksheet.write(0, 0, "Date", bold)
+                worksheet.write(0, 1, "Team", bold)
+                worksheet.write(0, 2, "Conf", bold)
+                worksheet.write(0, 3, "Spread (Opener)", bold)
+                worksheet.write(0, 4, "Odds", bold)
+                worksheet.write(0, 5, "Spread (BookMaker)", bold)
+                worksheet.write(0, 6, "Odds", bold)
+                worksheet.write(0, 7, "Spread (5 Dimes)", bold)
+                worksheet.write(0, 8, "Odds", bold)
+                worksheet.write(0, 9, "Spread (Bovada)", bold)
+                worksheet.write(0, 10, "Odds", bold)
+                worksheet.write(0, 11, "Away/Home Overall Record", bold)
+                worksheet.write(0, 12, "Percentage", bold)
+                worksheet.write(0, 13, "W-L (Overall) PCT", bold)
+                worksheet.write(0, 14, "STRK", bold)
+                worksheet.write(0, 15, "BPI Rank", bold)
+                worksheet.write(0, 16, "SOS Rank", bold)
+                worksheet.write(0, 17, "SOR Rank", bold)
+                worksheet.write(0, 18, "Score", bold)
+                worksheet.write(0, 19, "P.D", bold)
+                worksheet.write(0, 20, "Away 30% below", bold)
+                worksheet.write(0, 21, "Home 70% above", bold)
+                worksheet.write(0, 22, "Sharp-Square", bold)
+                worksheet.write(0, 23, "Wager", bold)            
+
+                index = 1
+                for row in data:                
+                    worksheet.write(index, 0, row[1])
+                    worksheet.write(index, 1, row[2])
+                    worksheet.write(index, 2, row[3])
+                    worksheet.write(index, 3, row[4])
+                    worksheet.write(index, 4, row[5])
+
+                    if row[6] != row[10]:
+                        worksheet.write(index, 5, row[6], magenta_format)
+                        worksheet.write(index, 9, row[10], magenta_format)
+                    else:
+                        worksheet.write(index, 5, row[6])
+                        worksheet.write(index, 9, row[10])
+
+                    worksheet.write(index, 6, row[7])
+                    worksheet.write(index, 7, row[8])
+                    worksheet.write(index, 8, row[9])                
+                    worksheet.write(index, 10, row[11])
+                    
+                    worksheet.write_string(index, 11, row[12])
+
+                    
+                    if index % 3 == 1:
+                        if float(row[13].replace('%','')) <= 30:
+                            worksheet.write(index, 12, row[13], tomato_format2)                        
+                        else:
+                            worksheet.write(index, 12, row[13])
+                    else:
+                        if float(row[13].replace('%','')) >= 70:
+                            worksheet.write(index, 12, row[13], green_format1)
+                        else:
+                            worksheet.write(index, 12, row[13])
+
+                    #worksheet.write(index, 12, row[13])
+                    worksheet.write(index, 13, row[14])
+                    worksheet.write(index, 14, row[15])
+                    worksheet.write(index, 15, row[16])
+                    worksheet.write(index, 16, row[17])
+                    worksheet.write(index, 17, row[18])
+                    worksheet.write(index, 18, row[19])
+                    worksheet.write(index, 19, row[20])
+                    worksheet.write(index, 20, row[21])
+                    worksheet.write(index, 21, row[22])
+                    worksheet.write(index, 22, row[23])
+                    worksheet.write(index, 23, row[24])
+                                    
+                    index = index + 1
+                    if index % 3 == 0:
+                        index = index + 1
+        
+        worksheet = workbook.add_worksheet("Weekly Total")
+        worksheet.write(0, 0, "Date", bold)
+        worksheet.write(0, 1, "Matchcup", bold)
+        worksheet.write(0, 2, "Result", bold)
+        worksheet.write(0, 3, "P.D", bold)
+        worksheet.write(0, 4, "Bookmaker", bold)
+        worksheet.write(0, 5, "Away Record", bold)
+        worksheet.write(0, 6, "Home Record", bold)
+        worksheet.write(0, 7, "Wager", bold)
+        worksheet.write(0, 8, "Bookmaker-P.D", bold)       
+        index = 1
+        for i in range(weekday+1):
+            
+            findex = weekday -i        
+            day = datetime.strftime(datetime.now() - timedelta(findex), '%Y-%m-%d')
+            date = datetime.strftime(datetime.now() - timedelta(findex), '%d')
+            month = datetime.strftime(datetime.now() - timedelta(findex), '%b')
+            
+            
+            c.execute("select * from spread where update_time='" + day + "'")
+            data = c.fetchall()
+            if data is not None:     
+                            
+                for tindex in range(int(len(data)/2)):
+                    row = data[tindex*2]
+                    nrow = data[tindex*2 + 1]
+                    if nrow[24] == "yes":
+                        away = "0"
+                        home = "0"
+                        naway = "0"
+                        nhome = "0"
+                        try:                    
+                            h_a = row[12].split("-")                        
+                            away = h_a[0]
+                            home = h_a[1]                        
+                        except:
+                            pass
+
+                        try:
+                            nh_a = nrow[12].split("-")
+                            naway = nh_a[0]
+                            nhome = nh_a[1]
+                        except:
+                            pass
+
+                        worksheet.write(index, 0, row[1])   #Date
+                        worksheet.write(index, 1, row[2])   #Matchcup
+                        worksheet.write(index, 2, row[19])   #Result
+                        worksheet.write(index, 3, row[20])   #P.D
+                        worksheet.write(index, 4, row[6])   #Bookmaker
+                        worksheet.write(index, 5, away)   #Away Record
+                        worksheet.write(index, 6, home)   #Home Record
+                        worksheet.write(index, 7, row[24])   #Wager
+                        worksheet.write(index, 8, row[23])   #Bookmaker-P.D
+                                    
+                        worksheet.write(index+1, 0, nrow[1])   #Date
+                        worksheet.write(index+1, 1, nrow[2])   #Matchcup
+                        worksheet.write(index+1, 2, nrow[19])   #Result
+                        worksheet.write(index+1, 3, nrow[20])   #P.D
+                        worksheet.write(index+1, 4, nrow[6])   #Bookmaker
+                        worksheet.write(index+1, 5, naway)   #Away Record
+                        worksheet.write(index+1, 6, nhome)   #Home Record
+                        worksheet.write(index+1, 7, nrow[24])   #Wager
+                        worksheet.write(index+1, 8, nrow[23])   #Bookmaker-P.D
+
+                        index = index + 2
+                        if index % 3 == 0:
+                            index = index + 1
+        conn.close()
+        workbook.close()
+    except Exception as e:
+        logging.debug(str(e))
+        pass
 
 def main():
+    logging.debug("Start...")
+    logging.debug("Espn...")
     get_espn()
+    logging.debug("colleage...")
     get_colleage()
+    logging.debug("spread...")
     spread = get_spread()
     spread.automate()
-    make_excel()    
-     
+    logging.debug("making...")
+    make_data()
+    logging.debug("creating...")
+    make_spread()    
+    logging.debug("End...")
+    
 main()
